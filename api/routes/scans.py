@@ -53,7 +53,13 @@ async def create_scan(scan: ScanCreate):
     """
     try:
         engine = get_engine()
-        state = await engine.start_scan(scan.target, scan.options)
+        
+        # Merge wordlist into options
+        options = scan.options or {}
+        if scan.wordlist:
+            options["wordlist"] = scan.wordlist
+            
+        state = await engine.start_scan(scan.target, options)
         
         # Store engine reference
         _active_scans[state.scan_id] = engine

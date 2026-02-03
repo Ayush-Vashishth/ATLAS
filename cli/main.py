@@ -56,6 +56,7 @@ def print_banner():
 def scan(
     target: str = typer.Argument(..., help="Target URL or IP address"),
     auto: bool = typer.Option(False, "--auto", "-a", help="Auto-select all applicable checks"),
+    wordlist: Optional[str] = typer.Option(None, "--wordlist", "-w", help="Path to custom wordlist for enumeration"),
     output: Optional[str] = typer.Option(None, "--output", "-o", help="Output report path"),
     format: str = typer.Option("html", "--format", "-f", help="Report format (html/json)")
 ):
@@ -83,7 +84,13 @@ def scan(
         ) as progress:
             # Initialize
             task = progress.add_task("Initializing scan...", total=None)
-            state = await engine.start_scan(target)
+            
+            # Prepare options
+            options = {}
+            if wordlist:
+                options["wordlist"] = wordlist
+                
+            state = await engine.start_scan(target, options)
             console.print(f"[dim]Scan ID: {state.scan_id}[/]")
             
             # Reconnaissance
@@ -438,7 +445,7 @@ def demo(
             # Custom target - use regular scan
             custom_url = Prompt.ask("Enter target URL")
             console.print("\n[yellow]Switching to standard scan mode...[/]\n")
-            scan(custom_url, auto=False, output=None, format="html")
+            scan(custom_url, auto=False, output=None, format="html", wordlist=None)
             return
         
         preset = presets[int(selection) - 1].id

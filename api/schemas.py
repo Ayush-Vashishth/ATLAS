@@ -44,6 +44,7 @@ class ScanPhase(str, Enum):
 class ScanCreate(BaseModel):
     """Request to create a new scan"""
     target: str = Field(..., description="Target URL or IP address", examples=["http://localhost:3000"])
+    wordlist: Optional[str] = Field(default=None, description="Path to custom wordlist for enumeration")
     options: Optional[Dict[str, Any]] = Field(default=None, description="Optional scan configuration")
 
 

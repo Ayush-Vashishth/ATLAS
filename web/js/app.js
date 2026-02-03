@@ -241,6 +241,7 @@ function goToStep(stepNum) {
 
 async function startScan() {
     const target = document.getElementById('target-input').value.trim();
+    const wordlist = document.getElementById('wordlist-input').value.trim();
 
     if (!target) {
         alert('Please enter a target URL or IP address');
@@ -250,10 +251,16 @@ async function startScan() {
     showLoading('Initializing scan...');
 
     try {
+        // Create scan payload
+        const payload = { target };
+        if (wordlist) {
+            payload.wordlist = wordlist;
+        }
+
         // Create scan
         const scan = await apiRequest('/scans', {
             method: 'POST',
-            body: JSON.stringify({ target })
+            body: JSON.stringify(payload)
         });
 
         currentScanId = scan.id;
@@ -481,6 +488,7 @@ function displayResults(findings) {
     document.getElementById('result-high').textContent = counts.high;
     document.getElementById('result-medium').textContent = counts.medium;
     document.getElementById('result-low').textContent = counts.low;
+    document.getElementById('result-info').textContent = counts.info;
 
     // Display findings
     const container = document.getElementById('findings-list');

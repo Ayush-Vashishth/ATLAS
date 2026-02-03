@@ -7,6 +7,7 @@
     <title>ATLAS - Security Assessment Framework</title>
     <meta name="description" content="Advanced Testing Lab for Application Security - Guided Vulnerability Assessment">
     <link rel="stylesheet" href="/static/css/style.css?v=2">
+    <link rel="icon" type="image/svg+xml" href="/static/assets/favicon.svg">
     <script src="/static/js/app.js?v=2" defer></script>
 </head>
 
@@ -292,6 +293,14 @@
                                 <small class="form-hint">Example: http://juice-shop:3000</small>
                             </div>
 
+                            <div class="form-group">
+                                <label for="wordlist-input">Custom Wordlist Path (Optional)</label>
+                                <input type="text" id="wordlist-input" class="form-input"
+                                    placeholder="e.g., /usr/share/wordlists/dirb/common.txt" autocomplete="off">
+                                <small class="form-hint">Absolute path to a custom wordlist for directory
+                                    enumeration.</small>
+                            </div>
+
                             <div class="form-actions">
                                 <button class="btn btn-primary" onclick="startScan()">
                                     Start Reconnaissance →
@@ -387,6 +396,10 @@
                                 <div class="summary-stat low">
                                     <span class="summary-value" id="result-low">0</span>
                                     <span class="summary-label">Low</span>
+                                </div>
+                                <div class="summary-stat info">
+                                    <span class="summary-value" id="result-info">0</span>
+                                    <span class="summary-label">Info</span>
                                 </div>
                             </div>
 

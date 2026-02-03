@@ -11,6 +11,7 @@ from dataclasses import dataclass, field
 
 from atlas.core.phase_controller import PhaseController, ScanPhase
 from atlas.utils.logger import get_logger
+from atlas.persistence.models import ReconResult, Finding, ExecutedCheck, CheckStatus, Severity
 
 logger = get_logger(__name__)
 
@@ -194,18 +195,67 @@ class StateManager:
             self._current_state.target_fingerprint = fingerprint
             self._current_state.recon_completed = True
             self.save_session()
-    
+            
+            # Persist to database
+            if self._database:
+                try:
+                    results = []
+                    # Process services
+                    for port, svc in services.items():
+                        results.append(ReconResult(
+                            scan_id=self._current_state.scan_id,
+                            port=int(port),
+                            protocol=svc.get("protocol", "tcp"),
+                            service=svc.get("service", "unknown"),
+                            version=svc.get("version"),
+                            product=svc.get("product"),
+                            extra_info=svc.get("extra_info") or str(svc),
+                            state=svc.get("state", "open")
+                        ))
+                    
+                    # Add any ports without service details
+                    existing_ports = set(r.port for r in results)
+                    for port in open_ports:
+                        if int(port) not in existing_ports:
+                            results.append(ReconResult(
+                                scan_id=self._current_state.scan_id,
+                                port=int(port),
+                                protocol="tcp",
+                                service="unknown"
+                            ))
+                            
+                    if results:
+                        self._database.add_recon_results(results)
+                        logger.debug(f"Persisted {len(results)} recon results")
+                except Exception as e:
+                    logger.error(f"Failed to persist recon results: {e}")
+
     def set_selected_checks(self, check_ids: List[str]):
         """Set user-selected checks"""
         if self._current_state:
             self._current_state.selected_checks = check_ids
             self.save_session()
-    
+
+
     def mark_check_started(self, check_id: str):
         """Mark a check as started"""
         if self._current_state:
             self._current_state.current_check = check_id
             self.save_session()
+            
+            if self._database:
+                try:
+                    check = ExecutedCheck(
+                        id=f"{self._current_state.scan_id}_{check_id}",
+                        scan_id=self._current_state.scan_id,
+                        check_id=check_id,
+                        check_name=check_id,  # Name not available here, using ID
+                        status=CheckStatus.RUNNING,
+                        started_at=datetime.utcnow()
+                    )
+                    self._database.add_executed_check(check)
+                except Exception as e:
+                    logger.error(f"Failed to persist check start: {e}")
     
     def mark_check_completed(self, check_id: str):
         """Mark a check as completed"""
@@ -214,12 +264,46 @@ class StateManager:
                 self._current_state.executed_checks.append(check_id)
             self._current_state.current_check = None
             self.save_session()
+            
+            if self._database:
+                try:
+                    self._database.update_executed_check(
+                        check_id=f"{self._current_state.scan_id}_{check_id}",
+                        status=CheckStatus.COMPLETED,
+                        completed_at=datetime.utcnow()
+                    )
+                except Exception as e:
+                    # If update failed, try adding (maybe start wasn't recorded)
+                    logger.debug(f"Update executed check failed, trying insert: {e}")
     
     def add_finding(self, finding: Dict[str, Any]):
         """Add a vulnerability finding"""
         if self._current_state:
             self._current_state.findings.append(finding)
             self.save_session()
+            
+            if self._database:
+                try:
+                    f_obj = Finding(
+                        id=finding["id"],
+                        scan_id=self._current_state.scan_id,
+                        check_id=finding["check_id"],
+                        title=finding["title"],
+                        severity=Severity(finding["severity"]),
+                        description=finding["description"],
+                        evidence=finding["evidence"],
+                        remediation=finding["remediation"],
+                        owasp_category=finding.get("owasp_category"),
+                        cwe_id=finding.get("cwe_id"),
+                        cvss_score=finding.get("cvss_score"),
+                        url=finding.get("url"),
+                        parameter=finding.get("parameter"),
+                        payload=finding.get("payload")
+                    )
+                    self._database.add_finding(f_obj)
+                    logger.debug(f"Persisted finding: {finding['title']}")
+                except Exception as e:
+                    logger.error(f"Failed to persist finding: {e}")
     
     def get_progress(self) -> Dict[str, Any]:
         """Get scan progress information"""

@@ -210,7 +210,8 @@ class ATLASEngine:
                         target=self.state.target,
                         context={
                             "services": self.state.services,
-                            "ports": self.state.open_ports
+                            "ports": self.state.open_ports,
+                            "metadata": self.state.metadata  # Pass scan metadata (options)
                         }
                     )
                     

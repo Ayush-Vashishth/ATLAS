@@ -186,43 +186,49 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 @app.exception_handler(404)
 async def not_found_handler(request: Request, exc: StarletteHTTPException):
     """Custom 404 error handler"""
+    if request.url.path.startswith("/api"):
+        return JSONResponse(status_code=404, content={"error": "Not Found", "detail": str(exc.detail)})
+        
     error_path = web_dir / "error" / "404.html"
     if error_path.exists():
         return HTMLResponse(content=error_path.read_text(encoding='utf-8'), status_code=404)
-    return JSONResponse(status_code=404, content={"error": "Not Found", "detail": str(exc.detail)})
+    return HTMLResponse(content="<h1>404 Not Found</h1>", status_code=404)
 
 
 @app.exception_handler(403)
 async def forbidden_handler(request: Request, exc: StarletteHTTPException):
     """Custom 403 error handler"""
+    if request.url.path.startswith("/api"):
+        return JSONResponse(status_code=403, content={"error": "Forbidden", "detail": str(exc.detail)})
+        
     error_path = web_dir / "error" / "403.html"
     if error_path.exists():
         return HTMLResponse(content=error_path.read_text(encoding='utf-8'), status_code=403)
-    return JSONResponse(status_code=403, content={"error": "Forbidden", "detail": str(exc.detail)})
+    return HTMLResponse(content="<h1>403 Forbidden</h1>", status_code=403)
 
 
 @app.exception_handler(500)
 async def server_error_handler(request: Request, exc: Exception):
     """Custom 500 error handler"""
+    if request.url.path.startswith("/api"):
+        return JSONResponse(status_code=500, content={"error": "Internal Server Error", "detail": str(exc)})
+        
     error_path = web_dir / "error" / "500.html"
     if error_path.exists():
         return HTMLResponse(content=error_path.read_text(encoding='utf-8'), status_code=500)
-    return JSONResponse(status_code=500, content={"error": "Internal Server Error", "detail": str(exc)})
+    return HTMLResponse(content=f"<h1>500 Internal Server Error</h1><p>{str(exc)}</p>", status_code=500)
 
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
     """Global exception handler"""
+    if request.url.path.startswith("/api"):
+        return JSONResponse(status_code=500, content={"error": "Internal Server Error", "detail": str(exc)})
+        
     error_path = web_dir / "error" / "500.html"
     if error_path.exists():
         return HTMLResponse(content=error_path.read_text(encoding='utf-8'), status_code=500)
-    return JSONResponse(
-        status_code=500,
-        content={
-            "error": "Internal Server Error",
-            "detail": str(exc)
-        }
-    )
+    return HTMLResponse(content=f"<h1>500 Internal Server Error</h1><p>{str(exc)}</p>", status_code=500)
 
 
 if __name__ == "__main__":

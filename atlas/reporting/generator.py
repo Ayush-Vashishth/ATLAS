@@ -319,6 +319,10 @@ class ReportGenerator:
                 <div class="summary-value">{{ report.summary.severity_counts.low or 0 }}</div>
                 <div class="summary-label">Low</div>
             </div>
+            <div class="summary-card info">
+                <div class="summary-value">{{ report.summary.severity_counts.info or 0 }}</div>
+                <div class="summary-label">Info</div>
+            </div>
         </div>
         
         <div class="section">
